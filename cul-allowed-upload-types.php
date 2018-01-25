@@ -165,12 +165,8 @@ function cul_allowed_upload_types_plugin_options() {
     <?php do_settings_sections( 'cul-allowed-upload-types-group' ); ?>
 
     <?php
-      if(get_option(CUL_ALLOWED_EXTENSIONS_KEY) == false) {
-        $allowed_extensions = array();
-      } else {
-        $allowed_extensions = json_decode(get_option(CUL_ALLOWED_EXTENSIONS_KEY), true);
-        ksort($allowed_extensions);
-      }
+      $allowed_extensions = cul_allowed_upload_types();
+      ksort($allowed_extensions);
     ?>
 
     <?php if(isset($_GET['json']) && $_GET['json'] == 'true'): ?>
