@@ -71,8 +71,8 @@ function cul_allowed_upload_types($mimes=array()) {
 
 add_action('upload_mimes', 'cul_allowed_upload_types');
 
-function cul_allowed_upload_file_extensions() {
-  return array_keys(cul_allowed_upload_types(array()));
+function cul_allowed_upload_file_extensions_as_json() {
+  return json_encode(array_keys(cul_allowed_upload_types()), JSON_UNESCAPED_SLASHES);
 }
 
 /** Set up settings page **/
