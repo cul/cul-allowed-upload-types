@@ -61,7 +61,7 @@ function cul_allowed_upload_types($mimes=array()) {
     	'ods'                          => 'application/vnd.oasis.opendocument.spreadsheet'
     );
 
-    update_option(CUL_ALLOWED_EXTENSIONS_KEY, json_encode($mimes, JSON_UNESCAPED_SLASHES));
+    update_option(CUL_ALLOWED_EXTENSIONS_KEY, json_encode($mimes));
   }
 
   $mimes = json_decode(get_option(CUL_ALLOWED_EXTENSIONS_KEY), true);
@@ -72,7 +72,7 @@ function cul_allowed_upload_types($mimes=array()) {
 add_action('upload_mimes', 'cul_allowed_upload_types');
 
 function cul_allowed_upload_file_extensions_as_json() {
-  return json_encode(array_keys(cul_allowed_upload_types()), JSON_UNESCAPED_SLASHES);
+  return json_encode(array_keys(cul_allowed_upload_types()));
 }
 
 /** Set up settings page **/
@@ -172,7 +172,7 @@ function cul_allowed_upload_types_plugin_options() {
     <?php if(isset($_GET['json']) && $_GET['json'] == 'true'): ?>
       <br />
       <textarea id="json-editor" name="<?php echo CUL_ALLOWED_EXTENSIONS_KEY; ?>" rows="20" cols="100"><?php
-        echo json_encode($allowed_extensions, JSON_UNESCAPED_SLASHES);
+        echo json_encode($allowed_extensions);
       ?></textarea>
     <?php else: ?>
       <div>
