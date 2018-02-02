@@ -36,7 +36,7 @@ function cul_allowed_upload_types($mimes=array()) {
     	'csv'                          => 'text/csv',
 
     	// Audio formats
-    	'mp3|m4a|m4b'                  => 'audio/mpeg',
+    	'mp3'                  => 'audio/mpeg',
     	'wav'                          => 'audio/wav',
     	'ogg'                          => 'audio/ogg',
       'oga'                          => 'audio/ogg',
