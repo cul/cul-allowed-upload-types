@@ -84,11 +84,44 @@ if ( is_admin() ){
 }
 
 function register_cul_allowed_upload_types_plugin_settings() {
-  register_setting( 'cul-allowed-upload-types-group', CUL_ALLOWED_EXTENSIONS_KEY );
+  register_setting( 'cul-allowed-upload-types-group', CUL_ALLOWED_EXTENSIONS_KEY, 'cul_allowed_upload_types_validate');
 }
 
 function cul_allowed_upload_types_plugin_menu() {
   add_options_page( 'CUL Allowed Upload Types', 'CUL Upload Types', 'manage_options', 'cul-allowed-upload-types', 'cul_allowed_upload_types_plugin_options' );
+}
+
+function cul_allowed_upload_types_validate($new_value)
+{
+    // Validate the new value
+    $valid = true;
+    foreach(json_decode($new_value) as $extension => $mime_type) {
+      // Validate extension
+      if( preg_match('/^[A-Za-z0-9]+$/', $extension) !== 1) {
+        add_settings_error(
+          'hasNumberError',
+          'validationError',
+          'Invalid extension: ' . $extension,
+          'error');
+          $valid = false;
+      }
+
+      // Validate mime type
+      if( preg_match('/^[A-Za-z0-9]+\/[A-Za-z0-9.-]+$/', $mime_type) !== 1) {
+        add_settings_error(
+          'hasNumberError',
+          'validationError',
+          'Invalid mime type: ' . $mime_type,
+          'error');
+          $valid = false;
+      }
+    }
+    if($valid) {
+      return $new_value;
+    } else {
+      // Return the old value
+      return get_option(CUL_ALLOWED_EXTENSIONS_KEY);
+    }
 }
 
 function cul_allowed_upload_types_plugin_options() {
