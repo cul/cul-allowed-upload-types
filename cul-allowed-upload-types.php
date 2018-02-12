@@ -79,8 +79,22 @@ function cul_allowed_upload_file_extensions_as_json() {
 if ( is_admin() ){
   cul_allowed_upload_types(array()); // Call allowed types method to initialize default values if blank
 
-  add_action( 'admin_menu', 'cul_allowed_upload_types_plugin_menu' );
+  if ( is_multisite() ) {
+    add_action( 'network_admin_menu', 'network_admin_menu' );
+  } else {
+    add_action( 'admin_menu', 'cul_allowed_upload_types_plugin_menu' );
+  }
   add_action( 'admin_init', 'register_cul_allowed_upload_types_plugin_settings' );
+}
+
+function network_admin_menu() {
+	add_menu_page(
+			'CUL Allowed Upload Types', // Page title
+			'CUL Upload Types', // Menu title
+			'manage_network_options', // Capability
+			'cul_allowed_upload_types_menu', // Menu slug
+			'cul_allowed_upload_types_plugin_options'
+	);
 }
 
 function register_cul_allowed_upload_types_plugin_settings() {
