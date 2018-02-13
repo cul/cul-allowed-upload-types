@@ -13,63 +13,102 @@ License URI: https://opensource.org/licenses/MIT
 
 define('CUL_ALLOWED_EXTENSIONS_KEY', 'cul_allowed_extensions');
 
-function cul_allowed_upload_types($mimes=array()) {
+function get_default_mimes() {
+  return array(
+    // Image formats
+    'jpg'                          => 'image/jpeg',
+    'jpeg'                         => 'image/jpeg',
+    'gif'                          => 'image/gif',
+    'png'                          => 'image/png',
+    'bmp'                          => 'image/bmp',
+    'tif'                          => 'image/tiff',
+    'tiff'                         => 'image/tiff',
 
-  if(get_option(CUL_ALLOWED_EXTENSIONS_KEY) == false || get_option(CUL_ALLOWED_EXTENSIONS_KEY) == '{}') {
-    $mimes = array(
-    	// Image formats
-    	'jpg'                          => 'image/jpeg',
-      'jpeg'                         => 'image/jpeg',
-    	'gif'                          => 'image/gif',
-    	'png'                          => 'image/png',
-    	'bmp'                          => 'image/bmp',
-    	'tif'                          => 'image/tiff',
-      'tiff'                         => 'image/tiff',
+    // Video formats
+    'mp4'                          => 'video/mp4',
+    'm4v'                          => 'video/mp4',
+    'avi'                          => 'video/avi',
 
-    	// Video formats
-    	'mp4'                          => 'video/mp4',
-      'm4v'                          => 'video/mp4',
-      'avi'                          => 'video/avi',
+    // Text formats
+    'txt'                          => 'text/plain',
+    'csv'                          => 'text/csv',
 
-    	// Text formats
-    	'txt'                          => 'text/plain',
-    	'csv'                          => 'text/csv',
+    // Audio formats
+    'mp3'                  => 'audio/mpeg',
+    'wav'                          => 'audio/wav',
+    'ogg'                          => 'audio/ogg',
+    'oga'                          => 'audio/ogg',
+    'mid'                          => 'audio/midi',
+    'midi'                         => 'audio/midi',
 
-    	// Audio formats
-    	'mp3'                  => 'audio/mpeg',
-    	'wav'                          => 'audio/wav',
-    	'ogg'                          => 'audio/ogg',
-      'oga'                          => 'audio/ogg',
-  	  'mid'                          => 'audio/midi',
-      'midi'                         => 'audio/midi',
+    // Misc application formats
+    'rtf'                          => 'application/rtf',
+    'pdf'                          => 'application/pdf',
 
-    	// Misc application formats
-    	'rtf'                          => 'application/rtf',
-    	'pdf'                          => 'application/pdf',
+    // MS Office formats
+    'doc'                          => 'application/msword',
+    'ppt'                          => 'application/vnd.ms-powerpoint',
+    'xls'                          => 'application/vnd.ms-excel',
+    'docx'                         => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'xlsx'                         => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'pptx'                         => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 
-    	// MS Office formats
-    	'doc'                          => 'application/msword',
-    	'ppt'                          => 'application/vnd.ms-powerpoint',
-    	'xls'                          => 'application/vnd.ms-excel',
-    	'docx'                         => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    	'xlsx'                         => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    	'pptx'                         => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-
-    	// OpenOffice formats
-    	'odt'                          => 'application/vnd.oasis.opendocument.text',
-    	'odp'                          => 'application/vnd.oasis.opendocument.presentation',
-    	'ods'                          => 'application/vnd.oasis.opendocument.spreadsheet'
-    );
-
-    update_option(CUL_ALLOWED_EXTENSIONS_KEY, json_encode($mimes));
-  }
-
-  $mimes = json_decode(get_option(CUL_ALLOWED_EXTENSIONS_KEY), true);
-
-  return $mimes;
+    // OpenOffice formats
+    'odt'                          => 'application/vnd.oasis.opendocument.text',
+    'odp'                          => 'application/vnd.oasis.opendocument.presentation',
+    'ods'                          => 'application/vnd.oasis.opendocument.spreadsheet'
+  );
 }
 
+function cul_allowed_upload_types($mimes=array()) {
+  $current_value = get_site_option(CUL_ALLOWED_EXTENSIONS_KEY);
+  if($current_value == false || $current_value == '{}' || $current_value == 'null') {
+    update_site_option(CUL_ALLOWED_EXTENSIONS_KEY, json_encode(get_default_mimes()));
+  }
+
+  $mimes = json_decode(get_site_option(CUL_ALLOWED_EXTENSIONS_KEY), true);
+  return $mimes;
+}
 add_action('upload_mimes', 'cul_allowed_upload_types');
+
+
+function multisite_update_upload_types_setting_from_post_data() {
+  $mime_json = stripslashes($_POST[CUL_ALLOWED_EXTENSIONS_KEY]);
+
+  if(mime_json_is_valid($mime_json)) {
+    update_site_option(CUL_ALLOWED_EXTENSIONS_KEY, $mime_json);
+
+    // Since this is a multisite instance, also update the upload_filetypes site
+    // option so it's in sync with our allowed extensions option.
+    // This is the setting labeled "Upload file types" on the /wp-admin/network/settings.php page.
+    update_site_option('upload_filetypes', 'Do Not Edit! Overridden by CUL Allowed Upload Types Plugin');
+
+    wp_redirect(
+      add_query_arg(
+        array( 'page' => 'cul_allowed_upload_types_menu', 'updated' => 'true' ),
+        (is_multisite() ? network_admin_url( 'admin.php' ) : admin_url( 'admin.php' ))
+      )
+    );
+
+    exit;
+  } else {
+
+    echo '<h2>Validation Error</h2>';
+
+    foreach(get_settings_errors() as $error) {
+      echo '<p>' . $error['message'] . '</p>';
+    }
+
+    $return_url = add_query_arg(
+      array( 'page' => 'cul_allowed_upload_types_menu' ),
+      (is_multisite() ? network_admin_url( 'admin.php' ) : admin_url( 'admin.php' ))
+    );
+
+    echo '<a href="' . $return_url . '" onclick="window.history.back(); return false;">&laquo; Go Back</a>';
+
+    wp_die();
+  }
+}
 
 function cul_allowed_upload_file_extensions_as_json() {
   return json_encode(array_keys(cul_allowed_upload_types()));
@@ -79,49 +118,69 @@ function cul_allowed_upload_file_extensions_as_json() {
 if ( is_admin() ){
   cul_allowed_upload_types(array()); // Call allowed types method to initialize default values if blank
 
-  add_action( 'admin_menu', 'cul_allowed_upload_types_plugin_menu' );
-  add_action( 'admin_init', 'register_cul_allowed_upload_types_plugin_settings' );
+  if ( is_multisite() ) {
+    add_action( 'network_admin_menu',  'culaut_add_network_admin_menu' );
+    add_action( 'network_admin_edit_multisite_update_upload_types_setting_from_post_data', 'multisite_update_upload_types_setting_from_post_data' );
+  } else {
+    add_action( 'admin_menu', 'culaut_add_admin_menu' );
+    add_action( 'admin_init', 'register_cul_allowed_upload_types_plugin_settings' );
+  }
+}
+
+function culaut_add_network_admin_menu() {
+	add_menu_page(
+			'CUL Allowed Upload Types', // Page title
+			'CUL Upload Types', // Menu title
+			'manage_network_options', // Capability
+			'cul_allowed_upload_types_menu', // Menu slug
+			'cul_allowed_upload_types_plugin_options'
+	);
+}
+
+function culaut_add_admin_menu() {
+  add_options_page( 'CUL Allowed Upload Types', 'CUL Upload Types', 'manage_options', 'cul-allowed-upload-types', 'cul_allowed_upload_types_plugin_options' );
 }
 
 function register_cul_allowed_upload_types_plugin_settings() {
+  // It seems like register_setting is only necessary on single site, and does nothing on multisite
   register_setting( 'cul-allowed-upload-types-group', CUL_ALLOWED_EXTENSIONS_KEY, 'cul_allowed_upload_types_validate');
-}
-
-function cul_allowed_upload_types_plugin_menu() {
-  add_options_page( 'CUL Allowed Upload Types', 'CUL Upload Types', 'manage_options', 'cul-allowed-upload-types', 'cul_allowed_upload_types_plugin_options' );
 }
 
 function cul_allowed_upload_types_validate($new_value)
 {
-    // Validate the new value
-    $valid = true;
-    foreach(json_decode($new_value) as $extension => $mime_type) {
-      // Validate extension
-      if( preg_match('/^[A-Za-z0-9]+$/', $extension) !== 1) {
-        add_settings_error(
-          'hasNumberError',
-          'validationError',
-          'Invalid extension: ' . $extension,
-          'error');
-          $valid = false;
-      }
-
-      // Validate mime type
-      if( preg_match('/^[A-Za-z0-9]+\/[A-Za-z0-9.-]+$/', $mime_type) !== 1) {
-        add_settings_error(
-          'hasNumberError',
-          'validationError',
-          'Invalid mime type: ' . $mime_type,
-          'error');
-          $valid = false;
-      }
-    }
-    if($valid) {
+    if(mime_json_is_valid($new_value)) {
       return $new_value;
     } else {
       // Return the old value
-      return get_option(CUL_ALLOWED_EXTENSIONS_KEY);
+      return get_site_option(CUL_ALLOWED_EXTENSIONS_KEY);
     }
+}
+
+function mime_json_is_valid($mime_json) {
+  // Validate the new value
+  $valid = true;
+  foreach(json_decode($mime_json) as $extension => $mime_type) {
+    // Validate extension
+    if( preg_match('/^[A-Za-z0-9]+$/', $extension) !== 1) {
+      add_settings_error(
+        'hasNumberError',
+        'validationError',
+        'Invalid extension: ' . $extension,
+        'error');
+      $valid = false;
+    }
+
+    // Validate mime type
+    if( preg_match('/^[A-Za-z0-9]+\/[A-Za-z0-9.-]+$/', $mime_type) !== 1) {
+      add_settings_error(
+        'hasNumberError',
+        'validationError',
+        'Invalid mime type: ' . $mime_type,
+        'error');
+      $valid = false;
+    }
+  }
+  return $valid;
 }
 
 function cul_allowed_upload_types_plugin_options() {
@@ -184,8 +243,7 @@ function cul_allowed_upload_types_plugin_options() {
   <div class="wrap">
     <h2>CUL Allowed Upload Types</h2>
   </div>
-  <form id="cul-allowed-upload-types-form" method="post" action="options.php">
-
+  <form id="cul-allowed-upload-types-form" method="post" action="<?php echo is_multisite() ? admin_url('network/edit.php?action=multisite_update_upload_types_setting_from_post_data') : 'options.php'; ?>">
     <div>
       <?php if(isset($_GET['json']) && $_GET['json'] == 'true'): ?>
         <a href="<?php echo strtok($_SERVER["REQUEST_URI"],'?') . '?page=' . esc_html($_GET['page']) . '&amp;json=false'; ?>">Edit as Form</a>
