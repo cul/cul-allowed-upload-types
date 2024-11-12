@@ -34,7 +34,8 @@ function get_default_mimes() {
     'csv'                          => 'text/csv',
 
     // Audio formats
-    'mp3'                  => 'audio/mpeg',
+    'mp3'                          => 'audio/mpeg',
+    'm4a'                          => 'audio/mp4',
     'wav'                          => 'audio/wav',
     'ogg'                          => 'audio/ogg',
     'oga'                          => 'audio/ogg',
